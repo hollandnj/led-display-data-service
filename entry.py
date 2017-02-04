@@ -8,4 +8,4 @@ CORS(app)
 app.register_blueprint(x_routes)
 
 if __name__ == '__main__':
-    app.run()
+    app.run(host='0.0.0.0')

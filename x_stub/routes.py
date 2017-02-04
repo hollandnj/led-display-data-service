@@ -16,19 +16,28 @@ def arrival(a):
 
 @x_routes.route('/api/x/list', methods=['GET'])
 def get_x_list():
-    stopPoint = "490020191MU";
-    tfl_url = "https://api.tfl.gov.uk/StopPoint/%s/Arrivals?app_id=&app_key=" % stopPoint
-    response = urllib.urlopen(tfl_url)
-    arrivals = json.loads(response.read())
-    items = map(arrival, sorted(arrivals, key=lambda arrival: arrival["expectedArrival"]))
+    stopPoint1 = "490020191MU";
+    items1 = getStopPointArrivals(stopPoint1)
+    stopPoint2 = "490004960N";
+    items2 = getStopPointArrivals(stopPoint2)
 
-    x = { "feed" : {
-        "description": stopPoint,
-		"items": items
-        }
+    x = { "stops" : [{
+        "description": stopPoint1,
+		"items": items1
+        },{
+	"description": stopPoint2,
+		"items": items2
+	}]
     }
     response_body= json.dumps(x)
 
     resp = make_response(response_body)
     resp.mimetype = 'application/json'
     return resp
+
+def getStopPointArrivals(stopPoint):
+    tfl_url = "https://api.tfl.gov.uk/StopPoint/%s/Arrivals?app_id=&app_key=" % stopPoint
+    response = urllib.urlopen(tfl_url)
+    arrivals = json.loads(response.read())
+    items = map(arrival, sorted(arrivals, key=lambda arrival: arrival["expectedArrival"]))
+    return items
