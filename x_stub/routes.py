@@ -9,7 +9,8 @@ def arrival(a):
         "id": a["id"],
         "destinationName": a["destinationName"],
         "expectedArrival": a["expectedArrival"],
-        "lineName": a["lineName"]
+        "lineName": a["lineName"],
+	"timeToStation": a["timeToStation"]
         }
     return arrival
 
@@ -41,3 +42,4 @@ def getStopPointArrivals(stopPoint):
     arrivals = json.loads(response.read())
     items = map(arrival, sorted(arrivals, key=lambda arrival: arrival["expectedArrival"]))
     return items
+
