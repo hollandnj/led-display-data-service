@@ -15,7 +15,9 @@ def arrival(a):
         "platformName": a["platformName"],
         "lineName": a["lineName"],
         "scheduled": None,
-        "expected": a["expectedArrival"],
+        "expected": a["expected"],
+        "scheduledDateTime": None,
+        "expectedDateTime": a["expectedArrival"],
         "timeToStation": a["timeToStation"]
     }
     return arrival
@@ -29,7 +31,9 @@ def trainArrival(a):
         "platformName": a["platform"],
         "lineName": None,
         "scheduled": a["std"],
-        "expected": a["expected"],
+        "expected": a["etd"],
+        "scheduledDateTime": a["std_datetime"],
+        "expectedDateTime": a["etd_datetime"],
         "timeToStation": a["timeToStation"]
     }
     return arrival
@@ -76,26 +80,41 @@ def getNationalRailArrivals(crs):
 
     train_services = []
     for service in board.train_services:
-        estimated_time_string = service.std if service.etd == 'On time' else service.etd
         try:
-            parsed_estimated_datetime = datetime.datetime.combine(board.generated_at,
-                datetime.datetime.strptime(estimated_time_string,'%H:%M').time())
-            timeToStation = parsed_estimated_datetime - board.generated_at
-            # todo handle cancelled
-            train_services.append(
-        	    {
-                "id": service.service_id,
-        		"platform": service.platform,
-        		"destination_text": service.destination_text,
-        		"std": service.std,
-        		"etd": estimated_time_string,
-                "expected": parsed_estimated_datetime.isoformat(),
-                "timeToStation" : int(timeToStation.total_seconds())
-        	    })
+            std_datetime = datetime.datetime.combine(board.generated_at,
+                datetime.datetime.strptime(service.std,'%H:%M').time())
         except ValueError:
-            print estimated_time_string
-            parsed_estimated_datetime = None
+            std_datetime = None
 
+        try:
+            etd_datetime = datetime.datetime.combine(board.generated_at,
+                datetime.datetime.strptime(service.etd,'%H:%M').time())
+            #timeToStation = parsed_estimated_datetime - board.generated_at
+            # todo handle cancelled
+        except ValueError:
+            # Could be 'On time' or 'Cancelled'
+            # in either case use scheduled time
+            etd_datetime = std_datetime
+            #print estimated_time_string
+            #parsed_estimated_datetime = None
+            #timeToStation = None
+
+        if etd_datetime is not None:
+            timeToStation = etd_datetime - board.generated_at
+        else:
+            timeToStation = None
+
+        train_services.append(
+    	    {
+            "id": service.service_id,
+    		"platform": service.platform,
+    		"destination_text": service.destination_text,
+    		"std": service.std,
+    		"etd": service.etd,
+            "std_datetime": std_datetime.isoformat(),
+            "etd_datetime": etd_datetime.isoformat(),
+            "timeToStation" : int(timeToStation.total_seconds())
+    	    })
 
     items = map(trainArrival, train_services)
     return items
@@ -105,5 +124,10 @@ def getStopPointArrivals(stopPoint):
     tfl_url = "https://api.tfl.gov.uk/StopPoint/%s/Arrivals?app_id=&app_key=" % stopPoint
     response = urllib.urlopen(tfl_url)
     arrivals = json.loads(response.read())
-    items = map(arrival, arrivals)
+    items = []
+    for arr in arrivals:
+        arr["expected"] = datetime.datetime.strftime(
+            datetime.datetime.strptime(arr["expectedArrival"],"%Y-%m-%dT%H:%M:%SZ"),
+            "%H:%M")
+        items.append(arrival(arr))
     return items
