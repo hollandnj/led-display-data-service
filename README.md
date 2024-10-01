@@ -19,3 +19,8 @@ To start
 ```
 (env) $ python entry.py
 ```
+
+To deactivate
+```
+(env) $ deactivate
+```
